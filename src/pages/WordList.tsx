@@ -33,6 +33,8 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 
 export function WordList() {
   const { vocabulary } = useApp();
+  const { currentUser } = useAuth();
+  const isAdmin = currentUser?.role === 'admin';
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterLevel>('all');
   const [sortOption, setSortOption] = useState<SortOption>('recent');
