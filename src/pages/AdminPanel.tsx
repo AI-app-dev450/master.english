@@ -1,9 +1,10 @@
 import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Users, Shield, Upload, Download, Trash2, ToggleLeft, ToggleRight,
   Github, RefreshCw, Settings2, AlertTriangle, CheckCircle2, Cloud,
-  WifiOff, Database, FileDown, FileUp, Crown, UserX, UserCheck,
+  WifiOff, Database, FileDown, FileUp, Crown, UserX, UserCheck, User,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useApp } from '@/App';
@@ -13,6 +14,7 @@ import Papa from 'papaparse';
 export function AdminPanel() {
   const { getAllUsers, updateUser, deleteUser, toggleUserActive, getGithubConfig, saveGithubConfig, syncToGithub, loadFromGithub, isOnline, currentUser } = useAuth();
   const { vocabulary, addToast } = useApp();
+  const navigate = useNavigate();
   const [section, setSection] = useState<'users' | 'sync' | 'data'>('users');
   const [users, setUsers] = useState<AuthUser[]>(() => getAllUsers());
   const [ghToken, setGhToken] = useState(() => getGithubConfig()?.token || '');
@@ -160,35 +162,43 @@ export function AdminPanel() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="h-10 w-10 rounded-xl bg-[#1A1A2E] flex items-center justify-center">
-          <Shield className="h-5 w-5 text-[#F5A623]" />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold text-[#1A1A2E]">Admin Panel</h1>
-          <p className="text-sm text-gray-500">Manage users, sync, and vocabulary data</p>
-        </div>
-        <div className="ml-auto flex items-center gap-2">
-          {isOnline ? (
-            <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
-              <Cloud className="h-3 w-3" /> Online
-            </span>
-          ) : (
-            <span className="flex items-center gap-1 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-              <WifiOff className="h-3 w-3" /> Offline
-            </span>
-          )}
+      <div className="rounded-2xl bg-[#1A1A2E] text-white px-5 py-4">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-[#F5A623]/20 flex items-center justify-center flex-shrink-0">
+            <Shield className="h-5 w-5 text-[#F5A623]" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg font-bold">Admin Panel</h1>
+            <p className="text-xs text-white/50">Logged in as {currentUser?.username}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {isOnline ? (
+              <span className="flex items-center gap-1 text-xs text-green-400 bg-green-500/10 px-2 py-1 rounded-full">
+                <Cloud className="h-3 w-3" /> Online
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-xs text-white/40 bg-card/5 px-2 py-1 rounded-full">
+                <WifiOff className="h-3 w-3" /> Offline
+              </span>
+            )}
+            <button
+              onClick={() => navigate('/my-account')}
+              className="flex items-center gap-1.5 text-xs text-white/60 hover:text-white border border-white/10 hover:border-white/30 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              <User className="h-3.5 w-3.5" /> My Account
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+      <div className="flex gap-1 bg-muted p-1 rounded-xl">
         {sectionTabs.map(t => (
           <button
             key={t.id}
             onClick={() => setSection(t.id)}
             className={`flex items-center gap-2 flex-1 justify-center py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-              section === t.id ? 'bg-white text-[#1A1A2E] shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              section === t.id ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <t.icon className="h-4 w-4" />
@@ -201,7 +211,7 @@ export function AdminPanel() {
       {section === 'users' && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-[#1A1A2E]">All Users ({users.length})</h2>
+            <h2 className="font-semibold text-foreground">All Users ({users.length})</h2>
             <button onClick={handleExportAllUsers} className="flex items-center gap-1.5 text-sm text-[#4A90E2] hover:text-blue-700">
               <FileDown className="h-4 w-4" /> Export CSV
             </button>
@@ -209,7 +219,7 @@ export function AdminPanel() {
 
           <div className="space-y-3">
             {users.map(user => (
-              <div key={user.id} className="bg-white rounded-xl border border-gray-100 p-4">
+              <div key={user.id} className="bg-card rounded-xl border border-gray-100 p-4">
                 <div className="flex items-start gap-3">
                   <div className={`h-9 w-9 rounded-full flex items-center justify-center text-sm font-bold text-white flex-shrink-0 ${
                     user.role === 'admin' ? 'bg-[#F5A623]' : 'bg-[#4A90E2]'
@@ -218,7 +228,7 @@ export function AdminPanel() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-[#1A1A2E] text-sm">{user.username}</span>
+                      <span className="font-medium text-foreground text-sm">{user.username}</span>
                       {user.role === 'admin' && (
                         <span className="flex items-center gap-1 text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">
                           <Crown className="h-2.5 w-2.5" /> Admin
@@ -228,8 +238,8 @@ export function AdminPanel() {
                         <span className="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full">Inactive</span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500 truncate">{user.email}</p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                    <p className="text-xs text-muted-foreground">
                       Joined {new Date(user.joinDate).toLocaleDateString()} · {user.cefrLevel} · {user.currentStreak} day streak
                     </p>
                   </div>
@@ -240,7 +250,7 @@ export function AdminPanel() {
                       title={user.isActive ? 'Deactivate' : 'Activate'}
                       className={`p-1.5 rounded-lg transition-colors ${
                         user.role === 'admin' ? 'opacity-30 cursor-not-allowed' :
-                        user.isActive ? 'text-green-600 hover:bg-green-50' : 'text-gray-400 hover:bg-gray-100'
+                        user.isActive ? 'text-green-600 hover:bg-green-50' : 'text-muted-foreground hover:bg-muted'
                       }`}
                     >
                       {user.isActive ? <UserCheck className="h-4 w-4" /> : <UserX className="h-4 w-4" />}
@@ -252,7 +262,7 @@ export function AdminPanel() {
                       className={`p-1.5 rounded-lg transition-colors ${
                         confirmDelete === user.id ? 'bg-red-100 text-red-600' :
                         user.role === 'admin' || user.id === currentUser?.id
-                          ? 'opacity-30 cursor-not-allowed text-gray-400'
+                          ? 'opacity-30 cursor-not-allowed text-muted-foreground'
                           : 'text-red-400 hover:bg-red-50'
                       }`}
                     >
@@ -269,43 +279,43 @@ export function AdminPanel() {
       {/* GitHub Sync Section */}
       {section === 'sync' && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-          <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-4">
+          <div className="bg-card rounded-xl border border-gray-100 p-5 space-y-4">
             <div className="flex items-center gap-2">
-              <Github className="h-5 w-5 text-[#1A1A2E]" />
-              <h2 className="font-semibold text-[#1A1A2E]">GitHub Storage Configuration</h2>
+              <Github className="h-5 w-5 text-foreground" />
+              <h2 className="font-semibold text-foreground">GitHub Storage Configuration</h2>
             </div>
-            <p className="text-sm text-gray-500">Store vocabulary data in a GitHub repository. Works online; falls back to local storage when offline.</p>
+            <p className="text-sm text-muted-foreground">Store vocabulary data in a GitHub repository. Works online; falls back to local storage when offline.</p>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Personal Access Token</label>
+                <label className="block text-sm font-medium text-foreground/80 mb-1">Personal Access Token</label>
                 <input
                   type="password"
                   value={ghToken}
                   onChange={e => setGhToken(e.target.value)}
                   placeholder="ghp_xxxxxxxxxxxx"
-                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2]"
+                  className="w-full px-3 py-2.5 rounded-xl border border-border text-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2]"
                 />
-                <p className="text-xs text-gray-400 mt-1">Needs repo write access. Create at GitHub → Settings → Developer settings.</p>
+                <p className="text-xs text-muted-foreground mt-1">Needs repo write access. Create at GitHub → Settings → Developer settings.</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Repository (owner/repo)</label>
+                <label className="block text-sm font-medium text-foreground/80 mb-1">Repository (owner/repo)</label>
                 <input
                   type="text"
                   value={ghRepo}
                   onChange={e => setGhRepo(e.target.value)}
                   placeholder="username/lexicon-data"
-                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2]"
+                  className="w-full px-3 py-2.5 rounded-xl border border-border text-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2]"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Branch</label>
+                <label className="block text-sm font-medium text-foreground/80 mb-1">Branch</label>
                 <input
                   type="text"
                   value={ghBranch}
                   onChange={e => setGhBranch(e.target.value)}
                   placeholder="main"
-                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2]"
+                  className="w-full px-3 py-2.5 rounded-xl border border-border text-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2]"
                 />
               </div>
             </div>
@@ -318,8 +328,8 @@ export function AdminPanel() {
             </button>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-3">
-            <h3 className="font-semibold text-[#1A1A2E]">Sync Actions</h3>
+          <div className="bg-card rounded-xl border border-gray-100 p-5 space-y-3">
+            <h3 className="font-semibold text-foreground">Sync Actions</h3>
             <div className="flex gap-3">
               <button
                 onClick={handleSyncAll}
@@ -351,8 +361,8 @@ export function AdminPanel() {
       {/* Import/Export Section */}
       {section === 'data' && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-          <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-4">
-            <h2 className="font-semibold text-[#1A1A2E]">Vocabulary Data</h2>
+          <div className="bg-card rounded-xl border border-gray-100 p-5 space-y-4">
+            <h2 className="font-semibold text-foreground">Vocabulary Data</h2>
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={handleExportVocabulary}
@@ -365,14 +375,14 @@ export function AdminPanel() {
                 <input type="file" accept=".csv" onChange={handleImportVocabulary} className="hidden" />
               </label>
             </div>
-            <div className="text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
+            <div className="text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
               <p className="font-medium mb-1">CSV columns for import:</p>
-              <p className="font-mono text-[10px] text-gray-400">word, partOfSpeech, definition, exampleSentence, synonym, antonym, cefrLevel, category, difficulty, laoTranslation, thaiTranslation</p>
+              <p className="font-mono text-[10px] text-muted-foreground">word, partOfSpeech, definition, exampleSentence, synonym, antonym, cefrLevel, category, difficulty, laoTranslation, thaiTranslation</p>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-4">
-            <h2 className="font-semibold text-[#1A1A2E]">User Data</h2>
+          <div className="bg-card rounded-xl border border-gray-100 p-5 space-y-4">
+            <h2 className="font-semibold text-foreground">User Data</h2>
             <button
               onClick={handleExportAllUsers}
               className="w-full py-3 bg-[#1A1A2E] text-white rounded-xl text-sm font-medium hover:bg-[#252540] transition-colors flex items-center justify-center gap-2"

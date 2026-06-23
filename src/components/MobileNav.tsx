@@ -7,34 +7,38 @@ export function MobileNav() {
   const location = useLocation();
 
   const mobileNavItems = [
-    { path: '/', label: 'Home', icon: LayoutDashboard, exact: true },
-    { path: '/words', label: 'Words', icon: BookOpen, exact: false },
+    { path: '/', label: 'Home', icon: LayoutDashboard, exact: true, matchPrefix: '/' },
+    { path: '/words', label: 'Words', icon: BookOpen, exact: false, matchPrefix: '/words' },
     { path: '/study/flashcards', label: 'Study', icon: GraduationCap, exact: false, matchPrefix: '/study' },
-    { path: '/settings', label: 'Settings', icon: Settings, exact: false },
+    { path: '/settings', label: 'Settings', icon: Settings, exact: false, matchPrefix: '/settings' },
     currentUser?.role === 'admin'
-      ? { path: '/admin', label: 'Admin', icon: Shield, exact: false }
-      : { path: '/my-account', label: 'Account', icon: User, exact: false },
+      ? { path: '/admin', label: 'Admin', icon: Shield, exact: false, matchPrefix: '/admin' }
+      : { path: '/my-account', label: 'Account', icon: User, exact: false, matchPrefix: '/my-account' },
   ];
 
   return (
-    <nav className="sidebar-mobile fixed bottom-0 left-0 right-0 z-50 border-t border-[#E5E5DD] bg-[#1A1A2E] mobile-nav-safe">
-      <div className="flex items-center justify-around px-2 pt-1">
+    <nav className="sidebar-mobile fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-[#1A1A2E] mobile-nav-safe">
+      <div className="flex items-center justify-around px-1 pt-1 pb-1">
         {mobileNavItems.map((item) => {
-          const matchPath = item.matchPrefix || item.path;
           const isActive = item.exact
             ? location.pathname === item.path
-            : location.pathname === item.path || location.pathname.startsWith(matchPath);
+            : location.pathname.startsWith(item.matchPrefix);
 
           return (
             <NavLink
               key={item.path}
               to={item.path}
               end={item.exact}
-              className={`flex flex-col items-center gap-0.5 rounded-lg px-3 py-2 text-[11px] font-medium transition-colors ${
-                isActive ? 'text-[#F5A623]' : 'text-white/40 hover:text-white/70'
+              className={`flex flex-col items-center gap-0.5 rounded-xl px-3 py-2 text-[10px] font-medium transition-all ${
+                isActive
+                  ? 'text-[#F5A623] bg-white/5'
+                  : 'text-white/40 hover:text-white/70'
               }`}
             >
-              <item.icon className="h-5 w-5" strokeWidth={1.5} />
+              <item.icon
+                className={`h-5 w-5 ${isActive ? 'text-[#F5A623]' : ''}`}
+                strokeWidth={isActive ? 2 : 1.5}
+              />
               <span>{item.label}</span>
             </NavLink>
           );

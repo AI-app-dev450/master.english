@@ -105,6 +105,7 @@ interface AuthContextType extends AuthState {
   deleteUser: (id: string) => void;
   toggleUserActive: (id: string) => void;
   updateCurrentUserProfile: (updates: Partial<AuthUser>) => void;
+  changePassword: (currentPassword: string, newPassword: string) => { success: boolean; error?: string };
   getGithubConfig: () => GithubConfig | null;
   saveGithubConfig: (config: GithubConfig) => void;
   syncToGithub: (data: object, userId: string) => Promise<{ success: boolean; message: string }>;
@@ -229,6 +230,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     saveUsers(newUsers);
   }, []);
 
+  const changePassword = useCallback((currentPassword: string, newPassword: string): { success: boolean; error?: string } => {
+    if (!currentUser) return { success: false, error: 'Not logged in' };
+    if (newPassword.length < 6) return { success: false, error: 'New password must be at least 6 characters' };
+    const creds = loadCreds();
+    const hash = simpleHash(currentPassword);
+    if (creds[currentUser.email.toLowerCase()] !== hash) return { success: false, error: 'Current password is incorrect' };
+    creds[currentUser.email.toLowerCase()] = simpleHash(newPassword);
+    saveCreds(creds);
+    return { success: true };
+  }, [currentUser]);
+
   const updateCurrentUserProfile = useCallback((updates: Partial<AuthUser>) => {
     if (!currentUser) return;
     updateUser(currentUser.id, updates);
@@ -327,6 +339,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       deleteUser,
       toggleUserActive,
       updateCurrentUserProfile,
+      changePassword,
       getGithubConfig,
       saveGithubConfig,
       syncToGithub,

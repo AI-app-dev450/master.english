@@ -115,8 +115,15 @@ export function Sidebar({ profile, currentStreak }: SidebarProps) {
       </nav>
 
       {/* User Profile */}
-      <div className="mt-auto border-t border-white/10 px-4 py-4">
-        <div className="flex items-center gap-3 mb-3">
+      <div className="mt-auto border-t border-white/10 px-3 py-3">
+        <NavLink
+          to="/my-account"
+          className={({ isActive }) =>
+            `flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors mb-1 ${
+              isActive ? 'bg-white/10' : 'hover:bg-white/5'
+            }`
+          }
+        >
           <div
             className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white flex-shrink-0 ${
               currentUser?.role === 'admin' ? 'bg-[#F5A623]' : 'bg-[#4A90E2]'
@@ -125,16 +132,16 @@ export function Sidebar({ profile, currentStreak }: SidebarProps) {
             {profile.username.charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium truncate">{profile.username}</div>
+            <div className="text-sm font-medium text-white truncate">{profile.username}</div>
             <div className="flex items-center gap-1 text-[11px] text-white/50">
               <Flame className="h-3 w-3 text-[#F5A623]" />
               <span>{currentStreak} day streak</span>
             </div>
           </div>
-        </div>
+        </NavLink>
         <button
           onClick={logout}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/40 hover:text-white hover:bg-white/5 transition-colors"
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
         >
           <LogOut className="h-4 w-4" />
           <span>Sign Out</span>
