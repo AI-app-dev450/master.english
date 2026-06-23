@@ -47,14 +47,31 @@ function getSessionUser(): AuthUser | null {
 }
 
 function ensureAdminExists() {
-  const users = loadUsers();
-  const creds = loadCreds();
+  let users = loadUsers();
+  let creds = loadCreds();
+
+  // Migrate old admin email if present
+  const OLD_EMAIL = 'admin@lexicon.app';
+  const NEW_EMAIL = 'berndvh015@gmail.com';
+  const oldAdmin = users.find(u => u.role === 'admin' && u.email.toLowerCase() === OLD_EMAIL);
+  if (oldAdmin) {
+    users = users.map(u =>
+      u.id === oldAdmin.id ? { ...u, email: NEW_EMAIL, username: 'Beun Donsavanh' } : u
+    );
+    delete creds[OLD_EMAIL];
+    creds[NEW_EMAIL] = simpleHash('admin123');
+    saveUsers(users);
+    saveCreds(creds);
+    return;
+  }
+
+  // Create admin if no admin exists at all
   if (!users.find(u => u.role === 'admin')) {
     const adminId = uuidv4();
     const admin: AuthUser = {
       id: adminId,
       username: 'Beun Donsavanh',
-      email: 'berndvh015@gmail.com',
+      email: NEW_EMAIL,
       role: 'admin',
       joinDate: new Date().toISOString(),
       isActive: true,
@@ -66,7 +83,15 @@ function ensureAdminExists() {
     };
     users.push(admin);
     saveUsers(users);
-    creds['berndvh015@gmail.com'] = simpleHash('admin123');
+    creds[NEW_EMAIL] = simpleHash('admin123');
+    saveCreds(creds);
+    return;
+  }
+
+  // Ensure the correct admin always has a valid credential entry
+  const admin = users.find(u => u.role === 'admin');
+  if (admin && !creds[admin.email.toLowerCase()]) {
+    creds[admin.email.toLowerCase()] = simpleHash('admin123');
     saveCreds(creds);
   }
 }

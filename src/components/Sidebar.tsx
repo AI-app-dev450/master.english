@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, BookOpen, Layers, HelpCircle, Puzzle,
   Keyboard, Settings, Flame, LogOut, Shield, User,
@@ -12,8 +12,8 @@ interface SidebarProps {
 }
 
 const navItems = [
-  { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/words', label: 'My Words', icon: BookOpen },
+  { path: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { path: '/words', label: 'My Words', icon: BookOpen, end: false },
 ];
 
 const studyItems = [
@@ -22,6 +22,47 @@ const studyItems = [
   { path: '/study/matching', label: 'Matching', icon: Puzzle },
   { path: '/study/spelling', label: 'Spelling', icon: Keyboard },
 ];
+
+function SideNavLink({
+  to,
+  icon: Icon,
+  label,
+  end = false,
+  accent = false,
+}: {
+  to: string;
+  icon: React.ElementType;
+  label: string;
+  end?: boolean;
+  accent?: boolean;
+}) {
+  const location = useLocation();
+  // For study sub-routes, match by startsWith so the active state works
+  const isActive = end
+    ? location.pathname === to
+    : location.pathname === to || location.pathname.startsWith(to + '/') || location.pathname === to;
+
+  return (
+    <NavLink
+      to={to}
+      end={end}
+      className={`relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+        isActive
+          ? 'bg-white/10 text-white'
+          : 'text-white/50 hover:bg-white/5 hover:text-white'
+      }`}
+    >
+      {isActive && (
+        <div className="absolute left-0 h-4 w-[3px] rounded-r-full bg-[#F5A623]" />
+      )}
+      <Icon
+        className={`h-5 w-5 ${accent ? 'text-[#F5A623]' : ''}`}
+        strokeWidth={1.5}
+      />
+      <span className={accent ? 'text-[#F5A623]' : ''}>{label}</span>
+    </NavLink>
+  );
+}
 
 export function Sidebar({ profile, currentStreak }: SidebarProps) {
   const { currentUser, logout } = useAuth();
@@ -38,28 +79,13 @@ export function Sidebar({ profile, currentStreak }: SidebarProps) {
       <nav className="flex-1 px-3 overflow-y-auto">
         <div className="mb-6 space-y-1">
           {navItems.map((item) => (
-            <NavLink
+            <SideNavLink
               key={item.path}
               to={item.path}
-              end
-              className={({ isActive }) =>
-                `relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-white/10 text-white'
-                    : 'text-white/50 hover:bg-white/5 hover:text-white'
-                }`
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  {isActive && (
-                    <div className="absolute left-0 h-4 w-[3px] rounded-r-full bg-[#F5A623]" />
-                  )}
-                  <item.icon className="h-5 w-5" strokeWidth={1.5} />
-                  <span>{item.label}</span>
-                </>
-              )}
-            </NavLink>
+              icon={item.icon}
+              label={item.label}
+              end={item.end}
+            />
           ))}
         </div>
 
@@ -69,74 +95,21 @@ export function Sidebar({ profile, currentStreak }: SidebarProps) {
         </div>
         <div className="mb-6 space-y-1">
           {studyItems.map((item) => (
-            <NavLink
+            <SideNavLink
               key={item.path}
               to={item.path}
-              className={({ isActive }) =>
-                `relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-white/10 text-white'
-                    : 'text-white/50 hover:bg-white/5 hover:text-white'
-                }`
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  {isActive && (
-                    <div className="absolute left-0 h-4 w-[3px] rounded-r-full bg-[#F5A623]" />
-                  )}
-                  <item.icon className="h-5 w-5" strokeWidth={1.5} />
-                  <span>{item.label}</span>
-                </>
-              )}
-            </NavLink>
+              icon={item.icon}
+              label={item.label}
+            />
           ))}
         </div>
 
         {/* Bottom Navigation */}
         <div className="space-y-1">
-          <NavLink
-            to="/settings"
-            className={({ isActive }) =>
-              `relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-white/10 text-white'
-                  : 'text-white/50 hover:bg-white/5 hover:text-white'
-              }`
-            }
-          >
-            <Settings className="h-5 w-5" strokeWidth={1.5} />
-            <span>Settings</span>
-          </NavLink>
-
-          <NavLink
-            to="/my-account"
-            className={({ isActive }) =>
-              `relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-white/10 text-white'
-                  : 'text-white/50 hover:bg-white/5 hover:text-white'
-              }`
-            }
-          >
-            <User className="h-5 w-5" strokeWidth={1.5} />
-            <span>My Account</span>
-          </NavLink>
-
+          <SideNavLink to="/settings" icon={Settings} label="Settings" />
+          <SideNavLink to="/my-account" icon={User} label="My Account" />
           {currentUser?.role === 'admin' && (
-            <NavLink
-              to="/admin"
-              className={({ isActive }) =>
-                `relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-white/10 text-white'
-                    : 'text-white/50 hover:bg-white/5 hover:text-white'
-                }`
-              }
-            >
-              <Shield className="h-5 w-5 text-[#F5A623]" strokeWidth={1.5} />
-              <span className="text-[#F5A623]">Admin Panel</span>
-            </NavLink>
+            <SideNavLink to="/admin" icon={Shield} label="Admin Panel" accent />
           )}
         </div>
       </nav>
@@ -144,9 +117,11 @@ export function Sidebar({ profile, currentStreak }: SidebarProps) {
       {/* User Profile */}
       <div className="mt-auto border-t border-white/10 px-4 py-4">
         <div className="flex items-center gap-3 mb-3">
-          <div className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white flex-shrink-0 ${
-            currentUser?.role === 'admin' ? 'bg-[#F5A623]' : 'bg-[#4A90E2]'
-          }`}>
+          <div
+            className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white flex-shrink-0 ${
+              currentUser?.role === 'admin' ? 'bg-[#F5A623]' : 'bg-[#4A90E2]'
+            }`}
+          >
             {profile.username.charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
