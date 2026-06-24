@@ -91,13 +91,16 @@ export function WordList() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsImportExportOpen(true)}
-            className="flex items-center gap-2 rounded-[10px] border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
-          >
-            <Import className="h-4 w-4" strokeWidth={1.5} />
-            <span className="hidden sm:inline">Import / Export</span>
-          </button>
+          {/* Import / Export — admin only */}
+          {isAdmin && (
+            <button
+              onClick={() => setIsImportExportOpen(true)}
+              className="flex items-center gap-2 rounded-[10px] border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/50"
+            >
+              <Import className="h-4 w-4" strokeWidth={1.5} />
+              <span className="hidden sm:inline">Import / Export</span>
+            </button>
+          )}
           {isAdmin && (
             <button
               onClick={() => setIsAddModalOpen(true)}
