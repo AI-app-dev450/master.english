@@ -5,20 +5,32 @@ import {
   Trash2, Save, AlertTriangle,
 } from 'lucide-react';
 import { useApp } from '@/App';
+import { useAuth } from '@/hooks/useAuth';
 import type { CEFRLevel } from '@/types/vocabulary';
 
 export function Settings() {
   const { vocabulary, addToast } = useApp();
+  const { currentUser, updateCurrentUserProfile } = useAuth();
   const [activeSection, setActiveSection] = useState<'account' | 'study' | 'display' | 'data'>('account');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
-  // Account form state
-  const [username, setUsername] = useState(vocabulary.profile.username);
-  const [email, setEmail] = useState(vocabulary.profile.email);
-  const [cefrLevel, setCefrLevel] = useState<CEFRLevel>(vocabulary.profile.cefrLevel);
-  const [dailyGoal, setDailyGoal] = useState(vocabulary.profile.dailyGoal);
+  // Auto-fill from the registered auth user — falls back to vocabulary profile
+  const [username, setUsername] = useState(
+    currentUser?.username || vocabulary.profile.username
+  );
+  const [email, setEmail] = useState(
+    currentUser?.email || vocabulary.profile.email
+  );
+  const [cefrLevel, setCefrLevel] = useState<CEFRLevel>(
+    (currentUser?.cefrLevel as CEFRLevel) || vocabulary.profile.cefrLevel
+  );
+  const [dailyGoal, setDailyGoal] = useState(
+    currentUser?.dailyGoal || vocabulary.profile.dailyGoal
+  );
 
   const handleSaveProfile = () => {
+    // Save to both auth user record and vocabulary profile so both stay in sync
+    updateCurrentUserProfile({ username, email, cefrLevel, dailyGoal });
     vocabulary.updateProfile({ username, email, cefrLevel, dailyGoal });
     addToast('Profile saved successfully', 'success');
   };
@@ -99,6 +111,11 @@ export function Settings() {
                     className="w-full rounded-[10px] border border-border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#F5A623]/40"
                     placeholder="your@email.com"
                   />
+                  {currentUser?.email && (
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      Registered as: <span className="font-medium text-foreground">{currentUser.email}</span>
+                    </p>
+                  )}
                 </div>
 
                 <div>
