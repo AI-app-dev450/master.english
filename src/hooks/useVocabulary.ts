@@ -278,12 +278,38 @@ function saveToStorage<T>(key: string, value: T) {
   }
 }
 
+// Shared word list key written by Google Sheet sync (admin sets, all users read)
+const GS_WORDS_KEY = 'moe_gsheet_words';
+
 export function useVocabulary(dataKeyPrefix?: string) {
   const KEYS = useMemo(() => makeStorageKeys(dataKeyPrefix), [dataKeyPrefix]);
 
-  const [words, setWords] = useState<VocabularyWord[]>(() =>
-    loadFromStorage(KEYS.words, INITIAL_WORDS)
-  );
+  const [words, setWords] = useState<VocabularyWord[]>(() => {
+    const userWords = loadFromStorage<VocabularyWord[]>(KEYS.words, INITIAL_WORDS);
+    // Merge shared sheet words (written by admin sync) into this user's word list
+    // on every app load so ALL users see the latest synced vocabulary
+    try {
+      const sheetWords: VocabularyWord[] = JSON.parse(localStorage.getItem(GS_WORDS_KEY) || '[]');
+      if (sheetWords.length > 0) {
+        const existingIds = new Set(userWords.map(w => w.id));
+        const existingWords = new Set(userWords.map(w => w.word.toLowerCase()));
+        const newSheetWords = sheetWords
+          .filter(sw => !existingWords.has(sw.word.toLowerCase()))
+          .map(sw => ({
+            ...sw,
+            id: sw.id || uuidv4(),
+            dateAdded: sw.dateAdded || new Date().toISOString(),
+            studyCount: 0,
+            correctCount: 0,
+            isLearned: false,
+            isStarred: false,
+            difficulty: sw.difficulty || 'medium' as const,
+          }));
+        if (newSheetWords.length > 0) return [...newSheetWords, ...userWords];
+      }
+    } catch { /* ignore */ }
+    return userWords;
+  });
   const [sessions, setSessions] = useState<StudySession[]>(() =>
     loadFromStorage(KEYS.sessions, [])
   );
