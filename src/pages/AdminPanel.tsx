@@ -52,11 +52,12 @@ export function AdminPanel() {
     getGithubConfig, saveGithubConfig, syncToGithub, loadFromGithub,
     isOnline, currentUser,
   } = useAuth();
-  const { vocabulary, addToast, gsheet } = useApp();
+  const { vocabulary, addToast, gsheet, githubSync } = useApp();
   const gs = gsheet;
   const navigate = useNavigate();
 
   const [tab, setTab]   = useState<Tab>('gsheet');
+  const [pushingRegistry, setPushingRegistry] = useState(false);
   const [users, setUsers] = useState<AuthUser[]>(() => getAllUsers());
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
@@ -97,6 +98,14 @@ export function AdminPanel() {
   };
 
   // ── GitHub ────────────────────────────────────────────────────────────────────
+  const handlePushRegistry = async () => {
+    setPushingRegistry(true);
+    const allUsers = getAllUsers();
+    const r = await githubSync.pushUserRegistry(allUsers);
+    addToast(r.message, r.success ? 'success' : 'error');
+    setPushingRegistry(false);
+  };
+
   const handleSaveGh  = () => { saveGithubConfig({ token:ghToken, repo:ghRepo, branch:ghBranch }); addToast('GitHub config saved','success'); };
   const handleGhPush  = async () => {
     if (!isOnline) { addToast('No internet connection','error'); return; }

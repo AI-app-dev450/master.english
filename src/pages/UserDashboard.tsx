@@ -15,7 +15,8 @@ type Tab = 'overview' | 'profile' | 'security';
 
 export function UserDashboard() {
   const { currentUser, updateCurrentUserProfile, changePassword, logout } = useAuth();
-  const { vocabulary, addToast } = useApp();
+  const { vocabulary, addToast, githubSync } = useApp();
+  const { isOnline } = useAuth();
 
   const [activeTab, setActiveTab] = useState<Tab>('overview');
 
@@ -83,6 +84,29 @@ export function UserDashboard() {
 
   const handleLogout = () => {
     logout();
+  };
+
+  const handleSyncNow = async () => {
+    if (!currentUser) return;
+    setSyncing(true);
+    // Push latest vocab to GitHub
+    const pushR = await githubSync.pushVocab(currentUser.id, vocabulary.words, vocabulary.sessions);
+    if (pushR.success) addToast(`✓ Synced ${pushR.count} words to GitHub`, 'success');
+    else addToast(`Sync: ${pushR.message}`, 'error');
+    setSyncing(false);
+  };
+
+  const handlePullNow = async () => {
+    if (!currentUser) return;
+    setSyncing(true);
+    const r = await githubSync.pullVocab(currentUser.id);
+    if (r.success && r.data) {
+      vocabulary.mergeSharedWords(r.data.words);
+      addToast(`✓ Pulled ${r.data.words.length} words from GitHub`, 'success');
+    } else {
+      addToast(r.message, 'error');
+    }
+    setSyncing(false);
   };
 
   const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [

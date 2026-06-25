@@ -5,6 +5,7 @@ import {
   Tag, BarChart2, RefreshCw,
 } from 'lucide-react';
 import { useApp } from '@/App';
+import { useNavigate } from 'react-router-dom';
 import { useSpeech } from '@/hooks/useSpeech';
 import type { VocabularyWord, CEFRLevel } from '@/types/vocabulary';
 
@@ -52,6 +53,7 @@ function DifficultyDots({ level }: { level: string }) {
 export function Flashcards() {
   const { vocabulary, addToast } = useApp();
   const { speak } = useSpeech();
+  const navigate = useNavigate();
 
   const [selectedLevel, setSelectedLevel] = useState<CEFRLevel | 'all'>('all');
   const [currentIndex, setCurrentIndex]   = useState(0);
@@ -127,7 +129,11 @@ export function Flashcards() {
       else if (e.code === 'ArrowRight') handleNext(true);
       else if (e.code === 'KeyS') {
         const w = shuffledWords[currentIndex];
-        if (w) vocabulary.toggleStar(w.id);
+        if (w) {
+          const live = vocabulary.words.find(x => x.id === w.id) ?? w;
+          vocabulary.toggleStar(w.id);
+          addToast(!live.isStarred ? '⭐ Added to Favorites' : 'Removed from Favorites', 'success');
+        }
       }
     };
     window.addEventListener('keydown', handler);
@@ -207,7 +213,10 @@ export function Flashcards() {
   }
 
   // ── Study screen ──────────────────────────────────────────────────────────────
-  const word = shuffledWords[currentIndex];
+  // Live word = merge shuffled word with current vocabulary state (so star/learned stays fresh)
+  const _staleWord = shuffledWords[currentIndex];
+  const _liveWord  = vocabulary.words.find(w => w.id === _staleWord?.id);
+  const word = _liveWord ?? _staleWord;
   const progress = ((currentIndex + 1) / shuffledWords.length) * 100;
   const cefrStyle = CEFR_STYLE[word.cefrLevel] ?? { bg: 'bg-gray-100 text-gray-600', label: word.cefrLevel };
 
@@ -242,11 +251,16 @@ export function Flashcards() {
             <div className="rounded-2xl border border-border bg-card shadow-sm min-h-[220px] flex flex-col items-center justify-center p-8 relative">
               {/* Star top-right */}
               <button
-                onClick={e => { e.stopPropagation(); vocabulary.toggleStar(word.id); }}
-                className="absolute top-4 right-4 rounded-lg p-1.5 transition-colors hover:bg-muted/50"
-                title="Star this word (S)"
+                onClick={e => {
+                  e.stopPropagation();
+                  vocabulary.toggleStar(word.id);
+                  const nowStarred = !word.isStarred;
+                  addToast(nowStarred ? '⭐ Added to Favorites' : 'Removed from Favorites', 'success');
+                }}
+                className="absolute top-4 right-4 rounded-lg p-1.5 transition-all hover:bg-muted/50 hover:scale-110 active:scale-95"
+                title={word.isStarred ? 'Remove from Favorites (S)' : 'Add to Favorites (S)'}
               >
-                <Star className={`h-5 w-5 ${word.isStarred ? 'fill-[#F5A623] text-[#F5A623]' : 'text-muted-foreground'}`} strokeWidth={1.5} />
+                <Star className={`h-5 w-5 transition-all ${word.isStarred ? 'fill-[#F5A623] text-[#F5A623] drop-shadow-sm' : 'text-muted-foreground'}`} strokeWidth={1.5} />
               </button>
 
               <h3 className="text-4xl font-bold text-foreground text-center mb-4">{word.word}</h3>
@@ -290,9 +304,15 @@ export function Flashcards() {
                     className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted/50 transition-colors" title="Pronounce">
                     <Volume2 className="h-4 w-4" strokeWidth={1.5} />
                   </button>
-                  <button onClick={e => { e.stopPropagation(); vocabulary.toggleStar(word.id); }}
-                    className="rounded-lg p-1.5 transition-colors hover:bg-muted/50" title="Star (S)">
-                    <Star className={`h-4 w-4 ${word.isStarred ? 'fill-[#F5A623] text-[#F5A623]' : 'text-muted-foreground'}`} strokeWidth={1.5} />
+                  <button onClick={e => {
+                      e.stopPropagation();
+                      vocabulary.toggleStar(word.id);
+                      const nowStarred = !word.isStarred;
+                      addToast(nowStarred ? '⭐ Added to Favorites' : 'Removed from Favorites', 'success');
+                    }}
+                    className="rounded-lg p-1.5 transition-all hover:bg-muted/50 hover:scale-110 active:scale-95"
+                    title={word.isStarred ? 'Remove from Favorites (S)' : 'Add to Favorites (S)'}>
+                    <Star className={`h-4 w-4 transition-all ${word.isStarred ? 'fill-[#F5A623] text-[#F5A623] drop-shadow-sm' : 'text-muted-foreground'}`} strokeWidth={1.5} />
                   </button>
                 </div>
               </div>
@@ -390,7 +410,7 @@ export function Flashcards() {
       </div>
 
       <p className="text-center text-xs text-muted-foreground/70">
-        Space to flip · ← Still Learning · → Got It · S to star
+        Space to flip · ← Still Learning · → Got It · S to star/unstar
       </p>
     </div>
   );

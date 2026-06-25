@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, Eye, EyeOff, LogIn, UserPlus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useGithubUserSync } from '@/hooks/useGithubUserSync';
+import { AUTH_STORAGE_KEY } from '@/types/auth';
 
 export function AuthPage() {
   const { login, register } = useAuth();
