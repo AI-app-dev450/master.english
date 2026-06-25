@@ -25,7 +25,14 @@ export function Matching() {
   const [gameComplete, setGameComplete] = useState(false);
   const [stars, setStars] = useState(0);
 
-  const words = selectedLevel === 'all'
+  // Level-journey & favorites session filter
+  const _ssFilter = sessionStorage.getItem('moe_study_filter');
+  const _ssLevel  = sessionStorage.getItem('moe_study_level') as CEFRLevel | null;
+  const words = _ssFilter === 'favorites'
+    ? vocabulary.words.filter(w => w.isStarred)
+    : _ssFilter === 'level' && _ssLevel
+    ? vocabulary.words.filter(w => w.cefrLevel === _ssLevel)
+    : selectedLevel === 'all'
     ? vocabulary.words
     : vocabulary.words.filter(w => w.cefrLevel === selectedLevel);
 

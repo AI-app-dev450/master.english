@@ -41,11 +41,12 @@ export function Settings() {
     addToast('All progress has been reset', 'success');
   };
 
+  const isAdmin = currentUser?.role === 'admin';
   const sections = [
     { id: 'account' as const, label: 'Account', icon: User },
-    { id: 'study' as const, label: 'Study', icon: Lightbulb },
+    { id: 'study'   as const, label: 'Study',   icon: Lightbulb },
     { id: 'display' as const, label: 'Display', icon: Sun },
-    { id: 'data' as const, label: 'Data', icon: Trash2 },
+    ...(isAdmin ? [{ id: 'data' as const, label: 'Data', icon: Trash2 }] : []),
   ];
 
   return (

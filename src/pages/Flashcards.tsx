@@ -62,7 +62,14 @@ export function Flashcards() {
   const [showSetup, setShowSetup]         = useState(true);
   const [direction, setDirection]         = useState<'left' | 'right' | null>(null);
 
-  const levelWords = selectedLevel === 'all'
+  // Level-journey & favorites session filter (set by LevelJourney / Favorites page)
+  const _ssFilter = sessionStorage.getItem('moe_study_filter');
+  const _ssLevel  = sessionStorage.getItem('moe_study_level') as CEFRLevel | null;
+  const levelWords = _ssFilter === 'favorites'
+    ? vocabulary.words.filter(w => w.isStarred)
+    : _ssFilter === 'level' && _ssLevel
+    ? vocabulary.words.filter(w => w.cefrLevel === _ssLevel)
+    : selectedLevel === 'all'
     ? vocabulary.words
     : vocabulary.words.filter(w => w.cefrLevel === selectedLevel);
 

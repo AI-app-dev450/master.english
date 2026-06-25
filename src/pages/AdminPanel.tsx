@@ -52,11 +52,11 @@ export function AdminPanel() {
     getGithubConfig, saveGithubConfig, syncToGithub, loadFromGithub,
     isOnline, currentUser,
   } = useAuth();
-  const { vocabulary, addToast } = useApp();
+  const { vocabulary, addToast, gsheet } = useApp();
+  const gs = gsheet;
   const navigate = useNavigate();
-  const gs = useGoogleSheet();
 
-  const [tab, setTab]   = useState<Tab>('users');
+  const [tab, setTab]   = useState<Tab>('gsheet');
   const [users, setUsers] = useState<AuthUser[]>(() => getAllUsers());
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 

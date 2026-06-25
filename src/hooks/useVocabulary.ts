@@ -558,6 +558,35 @@ export function useVocabulary(dataKeyPrefix?: string) {
     }
   }, [settings.googleSheetUrl, words]);
 
+
+  // Merge words from Google Sheet/GitHub without overwriting local study progress
+  const mergeSharedWords = useCallback((incoming: Partial<VocabularyWord>[]) => {
+    setWords(prev => {
+      const existingKeys = new Set(prev.map(w => w.word.toLowerCase().trim()));
+      const toAdd = (incoming as VocabularyWord[]).filter(
+        w => w.word && !existingKeys.has(w.word.toLowerCase().trim())
+      );
+      if (toAdd.length === 0) return prev;
+      const stamped: VocabularyWord[] = toAdd.map(w => ({
+        word: w.word,
+        partOfSpeech: w.partOfSpeech || 'noun',
+        definition: w.definition || '',
+        exampleSentence: w.exampleSentence || '',
+        cefrLevel: w.cefrLevel || 'B1',
+        difficulty: w.difficulty || 'medium',
+        id: `gs_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
+        dateAdded: new Date().toISOString(),
+        studyCount: 0, correctCount: 0, isStarred: false, isLearned: false,
+        ...(w.synonym          && { synonym:          w.synonym }),
+        ...(w.antonym          && { antonym:          w.antonym }),
+        ...(w.category         && { category:         w.category }),
+        ...(w.laoTranslation   && { laoTranslation:   w.laoTranslation }),
+        ...(w.thaiTranslation  && { thaiTranslation:  w.thaiTranslation }),
+      }));
+      return [...prev, ...stamped];
+    });
+  }, []);
+
   const resetProgress = useCallback(() => {
     setWords(prev => prev.map(w => ({
       ...w,
@@ -592,6 +621,7 @@ export function useVocabulary(dataKeyPrefix?: string) {
     updateProfile,
     updateSettings,
     syncToGoogleSheets,
+    mergeSharedWords,
     resetProgress,
   };
 }

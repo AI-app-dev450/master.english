@@ -320,6 +320,24 @@ export function UserDashboard() {
                     { label: 'Role', value: currentUser?.role === 'admin' ? '👑 Administrator' : '👤 Student' },
                     { label: 'Member Since', value: new Date(currentUser?.joinDate || '').toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) },
                   ].map(row => (
+
+              {/* Cross-device sync notice */}
+              <div className="rounded-xl bg-blue-50 border border-blue-100 p-4">
+                <div className="flex gap-3">
+                  <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <svg className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-blue-800">Your account works on any device</p>
+                    <p className="text-xs text-blue-700 mt-0.5">
+                      Log in with your email and password on any phone, tablet, or computer at the same URL — your profile and study progress sync automatically.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
                     <div key={row.label} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                       <span className="text-sm text-muted-foreground">{row.label}</span>
                       <span className="text-sm font-medium text-foreground">{row.value}</span>
