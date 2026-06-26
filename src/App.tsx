@@ -22,6 +22,7 @@ import { Profile } from '@/pages/Profile';
 import { AuthPage } from '@/pages/AuthPage';
 import { AdminPanel } from '@/pages/AdminPanel';
 import { UserDashboard } from '@/pages/UserDashboard';
+import { PreTest } from '@/pages/PreTest';
 interface AppContextType {
   vocabulary: ReturnType<typeof useVocabulary>;
   addToast: (message: string, type?: 'success' | 'error' | 'info' | 'warning') => string;
@@ -109,6 +110,7 @@ function AppInner() {
               <Route path="/settings"      element={<Settings />} />
               <Route path="/profile"       element={<Profile />} />
               <Route path="/my-account"    element={<UserDashboard />} />
+              <Route path="/pretest"       element={<PreTest />} />
               {currentUser?.role === 'admin' && (
                 <Route path="/admin" element={<AdminPanel />} />
               )}
