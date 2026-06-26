@@ -237,7 +237,7 @@ export function useGoogleSheet() {
   }, [syncNow]);
 
   // ── Load shared words on mount (for regular users who don't trigger sync) ────
-  const getSharedWords = useCallback((): typeof VALID_CEFR extends never ? never : any[] => {
+  const getSharedWords = useCallback((): any[] => {
     try {
       const stored = localStorage.getItem(GS_WORDS_KEY);
       return stored ? JSON.parse(stored) : [];
