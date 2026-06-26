@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, BookOpen, Star, Layers, HelpCircle, Puzzle,
-  Keyboard, Settings, Flame, LogOut, Shield, User, TrendingUp,
+  Keyboard, Settings, Flame, LogOut, Shield, User, TrendingUp, ClipboardList,
 } from 'lucide-react';
 import type { UserProfile } from '@/types/vocabulary';
 import { useAuth } from '@/hooks/useAuth';
@@ -44,6 +44,7 @@ export function Sidebar({ profile, currentStreak }: SidebarProps) {
             <SideNavLink to="/"          icon={LayoutDashboard} label="Dashboard" end />
             <SideNavLink to="/words"     icon={BookOpen}        label="My Words" />
             <SideNavLink to="/favorites" icon={Star}            label="Favorites" />
+            <SideNavLink to="/pretest"   icon={ClipboardList}   label="Pre-Test" />
           </div>
         </div>
 
