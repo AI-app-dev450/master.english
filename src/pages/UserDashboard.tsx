@@ -221,6 +221,67 @@ export function UserDashboard() {
             transition={{ duration: 0.2 }}
             className="space-y-4"
           >
+            {/* Pre-test result card */}
+            {(currentUser as any)?.pretestDone ? (
+              <div className="rounded-xl border border-[#F5A623]/40 bg-[#FFF8EC] p-4">
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F5A623]/20 shrink-0">
+                      <GraduationCap className="h-5 w-5 text-[#F5A623]" strokeWidth={1.5} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Pre-Test Result</p>
+                      <p className="text-xs text-muted-foreground">
+                        Score: {(currentUser as any)?.pretestScore ?? '—'}/25 ·
+                        Placed at <strong>{(currentUser as any)?.pretestLevel ?? currentUser?.cefrLevel}</strong>
+                        {(currentUser as any)?.pretestDate && (
+                          <> · {new Date((currentUser as any).pretestDate).toLocaleDateString()}</>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => { window.location.href = '#/pretest'; }}
+                    className="text-xs text-[#F5A623] hover:text-[#E09400] font-semibold border border-[#F5A623]/40 rounded-lg px-3 py-1.5 hover:bg-[#F5A623]/10 transition-colors"
+                  >
+                    Retake Test
+                  </button>
+                </div>
+                {/* Score bar */}
+                {(currentUser as any)?.pretestScore !== undefined && (
+                  <div className="mt-3">
+                    <div className="h-2 rounded-full bg-[#F5A623]/20 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-[#F5A623] transition-all"
+                        style={{ width: `${Math.round(((currentUser as any).pretestScore / 25) * 100)}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between mt-1 text-[10px] text-muted-foreground">
+                      <span>0</span><span>A1</span><span>A2</span><span>B1</span><span>B2</span><span>C1</span><span>C2 (25)</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-border bg-card/50 p-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-muted shrink-0">
+                    <GraduationCap className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Take the Pre-Test</p>
+                    <p className="text-xs text-muted-foreground">Find your CEFR level and unlock the right starting point</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { window.location.href = '#/pretest'; }}
+                  className="shrink-0 rounded-[10px] bg-[#F5A623] px-4 py-2 text-xs font-bold text-white hover:bg-[#E09400] transition-colors"
+                >
+                  Start →
+                </button>
+              </div>
+            )}
+
             {/* Stats grid */}
             <div className="grid grid-cols-2 gap-3">
               {[
