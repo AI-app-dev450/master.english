@@ -1,6 +1,6 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Layers, HelpCircle, Puzzle, Keyboard, ArrowLeft, TrendingUp } from 'lucide-react';
+import { Layers, HelpCircle, Puzzle, Keyboard, ArrowLeft, TrendingUp, Mic } from 'lucide-react';
 
 const studyModes = [
   { path: '/study/level',      label: 'Level Journey', icon: TrendingUp,  description: 'Progress A1 → C2 level by level', featured: true  },

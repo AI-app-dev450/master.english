@@ -23,6 +23,7 @@ import { AuthPage } from '@/pages/AuthPage';
 import { AdminPanel } from '@/pages/AdminPanel';
 import { UserDashboard } from '@/pages/UserDashboard';
 import { PreTest } from '@/pages/PreTest';
+import { RolePlay } from '@/pages/RolePlay';
 
 interface AppContextType {
   vocabulary: ReturnType<typeof useVocabulary>;
@@ -123,6 +124,7 @@ function AppInner() {
               <Route path="/settings"      element={<Settings />} />
               <Route path="/profile"       element={<Profile />} />
               <Route path="/my-account"    element={<UserDashboard />} />
+              <Route path="/roleplay"        element={<RolePlay />} />
               {currentUser?.role === 'admin' && (
                 <Route path="/admin" element={<AdminPanel />} />
               )}

@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, BookOpen, Star, Layers, HelpCircle, Puzzle,
-  Keyboard, Settings, Flame, LogOut, Shield, User, TrendingUp, ClipboardList,
+  Keyboard, Settings, Flame, LogOut, Shield, User, TrendingUp, Mic, ClipboardList,
 } from 'lucide-react';
 import type { UserProfile } from '@/types/vocabulary';
 import { useAuth } from '@/hooks/useAuth';
@@ -57,6 +57,7 @@ export function Sidebar({ profile, currentStreak }: SidebarProps) {
             <SideNavLink to="/study/quiz"       icon={HelpCircle}  label="Quiz" />
             <SideNavLink to="/study/matching"   icon={Puzzle}      label="Matching" />
             <SideNavLink to="/study/spelling"   icon={Keyboard}    label="Spelling" />
+            <SideNavLink to="/roleplay"          icon={Mic}         label="Speaking" accent />
           </div>
         </div>
 

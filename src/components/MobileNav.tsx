@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Star, TrendingUp, BookOpen, User, Shield } from 'lucide-react';
+import { LayoutDashboard, Star, TrendingUp, BookOpen, User, Shield, Mic } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 export function MobileNav() {
@@ -11,9 +11,7 @@ export function MobileNav() {
     { to: '/words',         label: 'Words',    icon: BookOpen,        exact: false, prefix: '/words'      },
     { to: '/favorites',     label: 'Favorites',icon: Star,            exact: false, prefix: '/favorites'  },
     { to: '/study/level',   label: 'Journey',  icon: TrendingUp,      exact: false, prefix: '/study'      },
-    currentUser?.role === 'admin'
-      ? { to: '/admin',      label: 'Admin',   icon: Shield, exact: false, prefix: '/admin' }
-      : { to: '/my-account', label: 'Account', icon: User,   exact: false, prefix: '/my-account' },
+    { to: '/roleplay',    label: 'Speaking', icon: Mic,    exact: false, prefix: '/roleplay' },
   ];
 
   return (

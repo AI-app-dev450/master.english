@@ -36,11 +36,21 @@ function saveCreds(creds: Record<string, string>) {
   localStorage.setItem(AUTH_CREDS_KEY, JSON.stringify(creds));
 }
 
+const SESSION_PERSIST_KEY = AUTH_SESSION_KEY + '_persist';
+const SESSION_EXPIRE_KEY  = AUTH_SESSION_KEY + '_expire';
+const SESSION_DAYS = 7;
+
 function getSessionUser(): AuthUser | null {
   try {
-    const raw = sessionStorage.getItem(AUTH_SESSION_KEY) || localStorage.getItem(AUTH_SESSION_KEY + '_persist');
-    if (!raw) return null;
-    const id = raw;
+    // Check 7-day expiry for persistent sessions
+    const expireAt = localStorage.getItem(SESSION_EXPIRE_KEY);
+    if (expireAt && Date.now() > parseInt(expireAt, 10)) {
+      localStorage.removeItem(SESSION_PERSIST_KEY);
+      localStorage.removeItem(SESSION_EXPIRE_KEY);
+      return null;
+    }
+    const id = sessionStorage.getItem(AUTH_SESSION_KEY) || localStorage.getItem(SESSION_PERSIST_KEY);
+    if (!id) return null;
     const users = loadUsers();
     return users.find(u => u.id === id) || null;
   } catch { return null; }
@@ -156,7 +166,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     saveUsers(newUsers);
     setCurrentUser(updated);
     if (remember) {
-      localStorage.setItem(AUTH_SESSION_KEY + '_persist', user.id);
+      const expireAt = Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000;
+      localStorage.setItem(SESSION_PERSIST_KEY, user.id);
+      localStorage.setItem(SESSION_EXPIRE_KEY, String(expireAt));
     } else {
       sessionStorage.setItem(AUTH_SESSION_KEY, user.id);
     }
@@ -189,14 +201,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     storedCreds[creds.email.toLowerCase()] = simpleHash(creds.password);
     saveCreds(storedCreds);
     setCurrentUser(newUser);
-    sessionStorage.setItem(AUTH_SESSION_KEY, id);
+    // Auto-login for 7 days after registration
+    const expireAt = Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000;
+    localStorage.setItem(SESSION_PERSIST_KEY, id);
+    localStorage.setItem(SESSION_EXPIRE_KEY, String(expireAt));
     return { success: true };
   }, []);
 
   const logout = useCallback(() => {
     setCurrentUser(null);
     sessionStorage.removeItem(AUTH_SESSION_KEY);
-    localStorage.removeItem(AUTH_SESSION_KEY + '_persist');
+    localStorage.removeItem(SESSION_PERSIST_KEY);
+    localStorage.removeItem(SESSION_EXPIRE_KEY);
   }, []);
 
   const getAllUsers = useCallback(() => loadUsers(), []);

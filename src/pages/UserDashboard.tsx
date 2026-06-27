@@ -238,8 +238,8 @@ export function UserDashboard() {
               ))}
             </div>
 
-            {/* Cloud sync */}
-            <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
+            {/* Cloud sync — admin only */}
+            {isAdmin && <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-semibold text-foreground">Cross-Device Sync</h3>
@@ -260,7 +260,7 @@ export function UserDashboard() {
                 </button>
               </div>
               {!isOnline && <p className="text-xs text-amber-600 text-center">Offline — changes saved locally</p>}
-            </div>
+            </div>}
 
             {/* Recent sessions */}
             {vocabulary.sessions.length > 0 && (
