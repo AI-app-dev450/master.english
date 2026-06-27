@@ -1,6 +1,6 @@
 {
   "userId": "115568ef-61d2-43ff-9e54-743ac91d0866",
-  "updatedAt": "2026-06-26T10:56:24.690Z",
+  "updatedAt": "2026-06-27T00:32:11.834Z",
   "words": [
     {
       "word": "Accomplish",
@@ -1954,10 +1954,11 @@
       "thaiTranslation": "ประพฤติตน / วางตัวดี",
       "id": "4eebe524-5091-46c5-bbb1-c3153d46204b",
       "dateAdded": "2026-06-25T14:19:46.075Z",
-      "studyCount": 0,
+      "studyCount": 1,
       "correctCount": 0,
       "isLearned": false,
-      "isStarred": false
+      "isStarred": true,
+      "lastStudied": "2026-06-26T11:01:08.205Z"
     },
     {
       "word": "Borrow",
@@ -2468,10 +2469,11 @@
       "thaiTranslation": "เปิด (ไฟ, เครื่องใช้ไฟฟ้า)",
       "id": "d2788896-842a-4411-90da-002f8c306241",
       "dateAdded": "2026-06-25T14:19:46.076Z",
-      "studyCount": 0,
+      "studyCount": 1,
       "correctCount": 0,
       "isLearned": false,
-      "isStarred": false
+      "isStarred": true,
+      "lastStudied": "2026-06-26T11:01:59.580Z"
     },
     {
       "word": "Turn off",
@@ -3727,10 +3729,11 @@
       "thaiTranslation": "กินข้าวเช้า / รับประทานอาหารเช้า (kin khao-chao)",
       "id": "1f65b783-17d1-4689-8e5b-8c5385d1e500",
       "dateAdded": "2026-06-25T14:19:46.076Z",
-      "studyCount": 0,
+      "studyCount": 1,
       "correctCount": 0,
       "isLearned": false,
-      "isStarred": false
+      "isStarred": false,
+      "lastStudied": "2026-06-26T11:00:16.621Z"
     },
     {
       "word": "Go shopping",
@@ -3822,10 +3825,11 @@
       "thaiTranslation": "โชคดี (chok-di)",
       "id": "244350f0-18b2-4c0b-82da-9870a8b79f95",
       "dateAdded": "2026-06-25T14:19:46.076Z",
-      "studyCount": 0,
-      "correctCount": 0,
-      "isLearned": false,
-      "isStarred": false
+      "studyCount": 1,
+      "correctCount": 1,
+      "isLearned": true,
+      "isStarred": false,
+      "lastStudied": "2026-06-26T10:59:52.266Z"
     },
     {
       "word": "Keep quiet",
@@ -4601,10 +4605,11 @@
       "thaiTranslation": "พักผ่อน / พักสายตา (phak-phon)",
       "id": "212eda21-7102-47a9-9523-5a7f34916764",
       "dateAdded": "2026-06-25T14:19:46.076Z",
-      "studyCount": 0,
+      "studyCount": 1,
       "correctCount": 0,
       "isLearned": false,
-      "isStarred": false
+      "isStarred": true,
+      "lastStudied": "2026-06-26T10:58:25.853Z"
     },
     {
       "word": "Do research",
@@ -9680,15 +9685,16 @@
       "difficulty": "medium",
       "id": "gs_1782465423047_tt2gi",
       "dateAdded": "2026-06-26T09:17:03.047Z",
-      "studyCount": 0,
+      "studyCount": 1,
       "correctCount": 0,
-      "isStarred": false,
+      "isStarred": true,
       "isLearned": false,
       "synonym": "Become weary",
       "antonym": "Gain energy",
       "category": "Body Status",
       "laoTranslation": "ເມື່ອຍ (muai)",
-      "thaiTranslation": "เหนื่อย / เริ่มล้า (nueai)"
+      "thaiTranslation": "เหนื่อย / เริ่มล้า (nueai)",
+      "lastStudied": "2026-06-26T10:57:27.472Z"
     },
     {
       "word": "Heavy rain",
