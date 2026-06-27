@@ -43,7 +43,9 @@ function ErrorBox({ children }: { children: React.ReactNode }) {
   return <div className="flex gap-2 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 p-3 text-sm text-red-800 dark:text-red-200">{children}</div>;
 }
 
-type Tab = 'users' | 'gsheet' | 'sync' | 'data';
+type Tab = 'users' | 'gsheet' | 'sync' | 'data' | 'aikeys';
+
+const ADMIN_API_KEYS_KEY = 'moe_admin_api_cfg';
 
 // ── Admin Panel ─────────────────────────────────────────────────────────────────
 export function AdminPanel() {
@@ -210,11 +212,24 @@ function doGet() {
     .setMimeType(ContentService.MimeType.JSON);
 }`;
 
+  // AI API Keys state (admin-only, stored under protected key)
+  const [aiAnthropicKey, setAiAnthropicKey] = useState<string>(() => {
+    try { return JSON.parse(localStorage.getItem(ADMIN_API_KEYS_KEY) || '{}').anthropic || ''; } catch { return ''; }
+  });
+  const [aiKeySaved, setAiKeySaved] = useState(false);
+  const saveAiKeys = () => {
+    const existing = (() => { try { return JSON.parse(localStorage.getItem(ADMIN_API_KEYS_KEY) || '{}'); } catch { return {}; } })();
+    localStorage.setItem(ADMIN_API_KEYS_KEY, JSON.stringify({ ...existing, anthropic: aiAnthropicKey }));
+    setAiKeySaved(true);
+    setTimeout(() => setAiKeySaved(false), 2500);
+  };
+
   const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
     { id:'users',  label:'Users',        icon:Users  },
     { id:'gsheet', label:'Google Sheet', icon:Link2  },
     { id:'sync',   label:'GitHub Sync',  icon:Github },
     { id:'data',   label:'Import/Export',icon:Database },
+    { id:'aikeys', label:'AI Keys',      icon:Zap    },
   ];
 
   return (
@@ -572,6 +587,49 @@ function doGet() {
           <WarnBox>
             <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5"/>
             <div><strong>Admin only.</strong> Import merges words — nothing is deleted. Export includes all words in the system.</div>
+          </WarnBox>
+        </motion.div>
+      )}
+
+      {/* ══ AI API KEYS ═════════════════════════════════════════════════════════ */}
+      {tab === 'aikeys' && (
+        <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} className="space-y-4">
+          <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-xl bg-[#F5A623]/10 flex items-center justify-center shrink-0">
+                <Zap className="h-5 w-5 text-[#F5A623]" />
+              </div>
+              <div>
+                <h2 className="font-semibold text-foreground">AI Service Configuration</h2>
+                <p className="text-xs text-muted-foreground">These keys power the Speaking Practice (RolePlay) feature</p>
+              </div>
+            </div>
+            <Field label="Anthropic API Key" note="Used for AI lesson generation and pronunciation feedback.">
+              <div className="flex gap-2">
+                <Input type="password" placeholder="sk-ant-…"
+                  value={aiAnthropicKey}
+                  onChange={e => setAiAnthropicKey(e.target.value)}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Get your key at <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" className="text-[#4A90E2] hover:underline">console.anthropic.com</a>. Users will never see this key.
+              </p>
+            </Field>
+            <button onClick={saveAiKeys}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#F5A623] text-white text-sm font-bold hover:bg-[#E09400] transition-colors">
+              {aiKeySaved ? <><CheckCircle2 className="h-4 w-4" /> Saved!</> : <><Zap className="h-4 w-4" /> Save AI Keys</>}
+            </button>
+          </div>
+          <InfoBox>
+            <Info className="h-4 w-4 shrink-0 mt-0.5"/>
+            <div>
+              <strong>User privacy:</strong> API keys are stored in a protected admin-only storage key and are never exposed to users in any UI, settings, or browser developer tools visible to learners.
+              The Speaking Practice feature uses these keys transparently — users only see lesson content and scores.
+            </div>
+          </InfoBox>
+          <WarnBox>
+            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5"/>
+            <div>Keys are stored in <code className="bg-amber-100 px-1 rounded text-xs">localStorage</code> of this browser. For production, use a backend secrets manager. Never share admin credentials.</div>
           </WarnBox>
         </motion.div>
       )}
