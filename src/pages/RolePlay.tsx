@@ -223,21 +223,222 @@ async function textToSpeech(text: string, elevenKey: string, voiceId: string): P
 
 /** Gemini Flash: generate shadow sentences or evaluate speech */
 async function callGemini(systemPrompt: string, userPrompt: string, googleKey: string): Promise<string> {
-  const body = {
-    system_instruction: { parts: [{ text: systemPrompt }] },
-    contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-    generationConfig: { maxOutputTokens: 1200, temperature: 0.7 },
-  };
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${googleKey}`,
-    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
-  );
-  if (!res.ok) throw new Error(`Gemini error ${res.status}`);
-  const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+  // Try gemini-2.0-flash first, then 1.5-flash as fallback
+  const models = [
+    'gemini-2.0-flash',
+    'gemini-1.5-flash-latest',
+    'gemini-1.5-flash',
+  ];
+  let lastErr = '';
+  for (const model of models) {
+    try {
+      const body = {
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+        generationConfig: { maxOutputTokens: 1200, temperature: 0.7 },
+      };
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${googleKey}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+      );
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        lastErr = `Gemini ${model} error ${res.status}: ${errText.slice(0, 120)}`;
+        continue;
+      }
+      const data = await res.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+      if (text) return text;
+      lastErr = `Empty response from ${model}`;
+    } catch (e: any) {
+      lastErr = e?.message || String(e);
+    }
+  }
+  throw new Error(lastErr || 'All Gemini models failed');
 }
 
-function speakText(text: string, onEnd?: () => void) {
+// ── Hardcoded fallback sentences (used when API is unavailable) ───────────────
+const FALLBACK_SENTENCES: Record<string, { text: string; tip: string }[]> = {
+  'a1-greetings': [
+    { text: 'Hello! My name is Sarah.', tip: 'Stress your name clearly — it\'s the most important word here.' },
+    { text: 'Nice to meet you!', tip: 'Smile naturally — this phrase always sounds warmer with a friendly tone.' },
+    { text: 'How are you today?', tip: 'The "you" is usually unstressed; say it quickly: "How-are-ya-today?"' },
+    { text: 'I am fine, thank you.', tip: 'Link "I am" → "I\'m" in natural speech for a more native sound.' },
+    { text: 'Where are you from?', tip: 'Raise your pitch slightly at the end — it\'s a question!' },
+    { text: 'I am from Thailand.', tip: 'Stress the country name — it carries the most important information.' },
+    { text: 'Good morning! How are you?', tip: '"Morning" is often reduced to "mornin\'" in casual speech.' },
+    { text: 'See you later. Goodbye!', tip: '"See you later" is more natural than "goodbye" in everyday conversation.' },
+  ],
+  'a1-numbers': [
+    { text: 'How much does this cost?', tip: 'Stress "much" and "cost" — these are the key words.' },
+    { text: 'It costs five dollars.', tip: 'Link "costs" and "five" smoothly without a pause between them.' },
+    { text: 'I want two apples, please.', tip: '"Please" at the end makes requests polite — always add it!' },
+    { text: 'Can I have three coffees?', tip: 'Use a rising tone on "coffees?" to show it\'s a request.' },
+    { text: 'That is twenty baht.', tip: 'Numbers before nouns are never stressed as heavily as the noun.' },
+    { text: 'Give me one ticket, please.', tip: '"One" can sound like "wun" — short and quick in natural speech.' },
+    { text: 'I need four bottles of water.', tip: '"Bottles of" links together — say it as one smooth unit.' },
+    { text: 'The total is fifteen dollars.', tip: 'Stress "fifteen" clearly — don\'t confuse it with "fifty"!' },
+  ],
+  'a2-cafe': [
+    { text: 'Can I have a large coffee, please?', tip: 'Link "I have" smoothly: "Can-I-ave a large coffee?"' },
+    { text: 'Could I see the menu, please?', tip: '"Could" is more polite than "can" — use it for requests to staff.' },
+    { text: 'I would like a table for two.', tip: '"I\'d like" is the natural contraction — practice saying it as one word.' },
+    { text: 'Could we have the bill, please?', tip: 'In the US say "check"; in the UK say "bill" — both are correct.' },
+    { text: 'Is this seat taken?', tip: 'Short question — rise in pitch on "taken" to signal it\'s a yes/no question.' },
+    { text: 'I will have the chocolate cake.', tip: 'Stress "chocolate cake" — it\'s what you\'re choosing.' },
+    { text: 'Do you have any decaf coffee?', tip: '"Any" in questions sounds like "en-ee" — keep it light and short.' },
+    { text: 'This coffee is delicious, thank you!', tip: 'Complimenting service builds a friendly rapport with staff.' },
+  ],
+  'a2-directions': [
+    { text: 'Excuse me, where is the train station?', tip: '"Excuse me" is essential — always use it to start politely.' },
+    { text: 'Turn left at the traffic lights.', tip: 'Stress "left" clearly so there\'s no confusion with "right".' },
+    { text: 'Go straight ahead for two blocks.', tip: '"Straight ahead" is two words but link them: "straight-ahead".' },
+    { text: 'The bank is on the right side.', tip: 'Point when speaking — it helps the listener understand faster.' },
+    { text: 'How far is it from here?', tip: '"From here" is often said quickly — link the two words.' },
+    { text: 'Take the second street on your left.', tip: '"Second" is a stressed word here — it\'s the key piece of info.' },
+    { text: 'It is about a ten-minute walk.', tip: 'Approximate distances with "about" to soften the estimate.' },
+    { text: 'You can\'t miss it — it\'s very big!', tip: '"You can\'t miss it" is an idiom meaning it\'s easy to find.' },
+  ],
+  'b1-travel': [
+    { text: 'I would like to check in for my flight to Bangkok.', tip: '"Check in" is a phrasal verb — both words are equally stressed.' },
+    { text: 'My luggage seems to have been lost by the airline.', tip: 'Use "seems to have been" to sound polite when reporting problems.' },
+    { text: 'Could you please tell me where the boarding gate is?', tip: 'This indirect question structure sounds more polite than a direct one.' },
+    { text: 'My flight has been delayed by two hours.', tip: 'Passive voice ("has been delayed") is very common for travel announcements.' },
+    { text: 'I would like to request a window seat, please.', tip: '"Would like to" is softer than "want to" — better for formal requests.' },
+    { text: 'Do I need to go through customs before baggage claim?', tip: 'Airport vocabulary: customs, immigration, and baggage claim are key words.' },
+    { text: 'Could you upgrade me to business class if available?', tip: '"If available" softens the request and shows you understand it may not happen.' },
+    { text: 'I am traveling for business, not for tourism.', tip: 'The "-ing" ending on "traveling" should be clear — avoid dropping the "g".' },
+  ],
+  'b1-work': [
+    { text: 'Could we schedule a meeting for Thursday afternoon?', tip: '"Schedule" stress is on the first syllable: SCHED-ule.' },
+    { text: 'I will send you the report by end of day.', tip: '"End of day" (EOD) is a common workplace phrase — learn it well.' },
+    { text: 'Can you clarify what you mean by that?', tip: 'Asking for clarification professionally shows engagement and intelligence.' },
+    { text: 'I am working on the project and will update you soon.', tip: 'Present continuous ("am working") shows an ongoing action — use it actively.' },
+    { text: 'Let\'s discuss this further in our next meeting.', tip: '"Let\'s" is a suggestion — your voice should be collaborative, not commanding.' },
+    { text: 'I appreciate your feedback on my presentation.', tip: '"Appreciate" stress: a-PRE-ci-ate — four syllables, stress on the second.' },
+    { text: 'We need to meet the deadline by Friday.', tip: '"Meet the deadline" is a set phrase — learn it as one unit.' },
+    { text: 'Please copy me on that email when you send it.', tip: '"Copy me in/on" means add you to CC — essential office English.' },
+  ],
+  'b1-health': [
+    { text: 'I have had a sore throat for three days.', tip: 'Use present perfect ("have had") to show duration up to now.' },
+    { text: 'Could I make an appointment with the doctor?', tip: 'You "make" an appointment — not "do" or "take" one.' },
+    { text: 'I am allergic to penicillin and some other antibiotics.', tip: 'Stress the key information: the allergy name must be very clear.' },
+    { text: 'Should I take this medicine with food?', tip: 'A simple but vital question — memorize this phrase for pharmacies.' },
+    { text: 'My head has been aching since this morning.', tip: 'Linking "has been aching" shows a continuous past-to-present action.' },
+    { text: 'I feel dizzy and a little short of breath.', tip: '"Short of breath" is an idiom — it means difficulty breathing.' },
+    { text: 'The doctor told me to rest for a few days.', tip: '"Told me to" reports instructions — indirect speech made simple.' },
+    { text: 'Can I get a prescription for something stronger?', tip: '"Get a prescription" — not "take" or "make" — is the correct collocation.' },
+  ],
+  'b2-debate': [
+    { text: 'I understand your point, but I would argue that the evidence suggests otherwise.', tip: 'Acknowledge before disagreeing — it shows intellectual respect.' },
+    { text: 'While I agree with some aspects, the broader implications concern me greatly.', tip: '"While" as a concession marker is a sophisticated discourse tool.' },
+    { text: 'It seems to me that we are overlooking a fundamental issue here.', tip: '"It seems to me" hedges your opinion politely without weakening it.' },
+    { text: 'Could you elaborate on what you mean by sustainable development in this context?', tip: '"Elaborate on" is a formal synonym for "explain more about" — use it.' },
+    { text: 'I strongly believe that education is the key to solving this problem.', tip: '"Strongly believe" signals conviction — stress both words firmly.' },
+    { text: 'That is an interesting perspective, though I am not entirely convinced.', tip: '"Not entirely convinced" is a polite, nuanced way to disagree.' },
+    { text: 'The data clearly shows that this approach has not been effective.', tip: 'Use "clearly shows" to make a confident, evidence-based point.' },
+    { text: 'To be fair, there are valid arguments on both sides of this debate.', tip: '"To be fair" is a discourse marker that shows balanced thinking.' },
+  ],
+  'b2-phone': [
+    { text: 'Hello, this is David calling from the marketing department.', tip: 'Always identify yourself immediately on professional calls.' },
+    { text: 'I am afraid I didn\'t quite catch what you said — could you repeat that?', tip: '"Didn\'t quite catch" is softer than "I didn\'t understand" — more polite.' },
+    { text: 'Could you speak up a little? The connection is not very clear.', tip: '"Speak up" (louder) vs "slow down" — know which you need!' },
+    { text: 'I will have to look into that and get back to you by tomorrow.', tip: '"Get back to you" is a key phrase — it means you\'ll respond later.' },
+    { text: 'Can I leave a message for Mr. Johnson if he\'s not available?', tip: 'Always offer to leave a message rather than just hanging up.' },
+    { text: 'We seem to have a bad connection — shall I call you back?', tip: '"Shall I" is more formal and polite than "should I" for offers.' },
+    { text: 'Just to confirm, the meeting is scheduled for 3pm on Monday.', tip: '"Just to confirm" is a professional way to verify information.' },
+    { text: 'Thank you for calling — I will follow up with an email shortly.', tip: '"Follow up" is a phrasal verb meaning to take further action.' },
+  ],
+  'b1-home': [
+    { text: 'I live in a small apartment in the city center.', tip: 'Stress "small" and "city center" — these are the descriptive details.' },
+    { text: 'We usually have dinner together as a family at seven.', tip: '"Usually" expresses habitual routine — stress it to show the pattern.' },
+    { text: 'My bedroom is the quietest room in the house.', tip: 'Superlatives ("quietest") need stress on the adjective itself.' },
+    { text: 'I try to do the laundry on weekends when I have time.', tip: '"Do the laundry" is the fixed collocation — not "make" or "wash" the laundry.' },
+    { text: 'Our neighborhood has a great market every Saturday morning.', tip: 'Linking "has a" sounds like "haz-a" — keep it smooth and connected.' },
+    { text: 'Could you help me move this sofa to the other side?', tip: 'Requests with "could you" always sound more polite than "can you".' },
+    { text: 'I need to fix the kitchen sink — it has been leaking.', tip: '"Has been leaking" = present perfect continuous, showing recent ongoing action.' },
+    { text: 'We are thinking of repainting the living room this summer.', tip: '"Thinking of + -ing" expresses a plan that isn\'t fully decided yet.' },
+  ],
+  'b2-relationships': [
+    { text: 'I really appreciate everything you have done for me.', tip: '"Really appreciate" — stress both adverb and verb for emotional sincerity.' },
+    { text: 'I think we need to talk about what happened yesterday.', tip: '"We need to talk" signals a serious conversation — tone matters here.' },
+    { text: 'I understand how you feel, and I am sorry for my part in this.', tip: 'Empathy before apology — this order sounds more genuine.' },
+    { text: 'Could we try to see this situation from each other\'s perspective?', tip: '"Each other\'s perspective" is sophisticated — the contraction flows naturally.' },
+    { text: 'I have been feeling a bit overwhelmed lately, if I am honest.', tip: '"If I\'m honest" is a softener that invites understanding, not judgment.' },
+    { text: 'It means a great deal to me that you were there when I needed you.', tip: '"Means a great deal" is a heartfelt, measured expression of gratitude.' },
+    { text: 'Let\'s agree to disagree on this one and move forward.', tip: '"Agree to disagree" is a key idiom for resolving conflict gracefully.' },
+    { text: 'I value our friendship too much to let this come between us.', tip: '"Come between us" is a fixed idiom — stress "between" and "us" equally.' },
+  ],
+  'c1-academic': [
+    { text: 'The findings suggest a strong correlation between socioeconomic status and educational attainment.', tip: 'Academic hedging: "suggest" is weaker than "prove" — use it appropriately.' },
+    { text: 'It could be argued that the methodology employed in this study has significant limitations.', tip: '"It could be argued" is impersonal academic voice — very common in essays.' },
+    { text: 'The author\'s central thesis challenges the prevailing consensus in the field.', tip: 'Stress "challenges" — it\'s the active verb carrying the main claim.' },
+    { text: 'Further longitudinal research is required to substantiate these preliminary findings.', tip: '"Substantiate" means to provide evidence for — a formal academic verb.' },
+    { text: 'This analysis draws on a theoretical framework proposed by Vygotsky in 1978.', tip: '"Draws on" is an academic phrasal verb meaning to use as a source.' },
+    { text: 'The evidence overwhelmingly supports the hypothesis that early intervention is beneficial.', tip: '"Overwhelmingly supports" is strong academic language — use it confidently.' },
+    { text: 'I would like to raise a point about the validity of the control group used.', tip: '"Raise a point" in seminars is polite and assertive — memorize this phrase.' },
+    { text: 'The implications of this research extend beyond the immediate academic context.', tip: 'Stress "beyond" — it signals the broader significance of the work.' },
+  ],
+  'c1-global': [
+    { text: 'Climate change poses an unprecedented threat to global food security and biodiversity.', tip: '"Unprecedented" stress: un-PREC-e-den-ted — five syllables, stress on second.' },
+    { text: 'The digital divide continues to exacerbate existing inequalities between developed and developing nations.', tip: '"Exacerbate" means to make worse — a sophisticated formal verb.' },
+    { text: 'Cultural exchange programs foster mutual understanding and reduce cross-cultural misunderstandings.', tip: '"Foster" means to encourage or promote — a formal verb worth knowing.' },
+    { text: 'Geopolitical tensions in the region have significant implications for international trade routes.', tip: '"Geopolitical" is four syllables: ge-o-po-LIT-i-cal — stress the fourth.' },
+    { text: 'A multilateral approach is essential to effectively address the refugee crisis.', tip: '"Multilateral" involves multiple nations — contrast with "bilateral" (two nations).' },
+    { text: 'The rise of populism across Europe reflects deep dissatisfaction with mainstream political parties.', tip: 'Complex ideas need clear delivery — slow down slightly for long sentences.' },
+    { text: 'Sustainable development requires balancing economic growth with environmental responsibility.', tip: '"Balancing... with..." is a parallel structure — give equal stress to both sides.' },
+    { text: 'Advances in artificial intelligence are fundamentally reshaping labor markets worldwide.', tip: 'Stress "fundamentally reshaping" — these words carry the key argument.' },
+  ],
+  'c2-nuance': [
+    { text: 'It goes without saying that trust, once broken, is extraordinarily difficult to rebuild.', tip: '"Goes without saying" is an idiom — ironically used to say something you are saying.' },
+    { text: 'One could be forgiven for thinking the situation had improved, yet the data tells a different story.', tip: '"One could be forgiven for thinking" is a beautifully understated concession.' },
+    { text: 'The policy, well-intentioned as it may have been, has had quite the opposite effect.', tip: 'Mid-sentence concession ("well-intentioned as it may have been") adds sophistication.' },
+    { text: 'Far be it from me to question the experts, but this conclusion seems rather premature.', tip: '"Far be it from me" is an elegant way to introduce a challenge to authority.' },
+    { text: 'The proposal is not without merit, though one wonders about its long-term viability.', tip: '"Not without merit" is litotes — understatement used for rhetorical effect.' },
+    { text: 'She gave him a look that could have stopped a clock, and said absolutely nothing.', tip: 'Idiom "stopped a clock" = extremely powerful — a very expressive literary phrase.' },
+    { text: 'That is all well and good in theory, but practice is an entirely different matter.', tip: '"All well and good" acknowledges something before dismissing its practical value.' },
+    { text: 'His apparent nonchalance belied a deep and barely concealed anxiety about the outcome.', tip: '"Belied" means contradicted — a subtle, literary verb that signals irony.' },
+  ],
+  'c2-literature': [
+    { text: 'The novel\'s fragmented narrative structure mirrors the protagonist\'s fractured sense of identity.', tip: 'Literary analysis language: "mirrors" as a verb links form and content elegantly.' },
+    { text: 'Orwell employs animal allegory to critique the mechanisms of totalitarian political power.', tip: '"Employs... to critique" — formal literary verb + infinitive of purpose.' },
+    { text: 'The film\'s cinematography creates a sense of claustrophobia that amplifies the central themes.', tip: '"Amplifies" is a strong verb — it means more than "shows" or "suggests".' },
+    { text: 'One of the most striking aspects of this painting is its deliberate rejection of perspective.', tip: 'Art criticism often uses "deliberate rejection" to highlight intentional artistic choices.' },
+    { text: 'The playwright subverts audience expectations by revealing the twist in the opening scene.', tip: '"Subverts expectations" is a key critical phrase in literature and film studies.' },
+    { text: 'This poem operates on multiple levels simultaneously, resisting any single interpretation.', tip: '"Resisting any single interpretation" is a mark of literary complexity — praise it.' },
+    { text: 'The author\'s use of dramatic irony creates tension between what the reader and character know.', tip: 'Dramatic irony = audience knows more than the character — stress "dramatic irony" clearly.' },
+    { text: 'Modernist literature fundamentally challenged conventional notions of time, self, and narrative.', tip: 'Three parallel nouns ("time, self, and narrative") — give each equal rhythmic weight.' },
+  ],
+};
+
+function getSentencesForLesson(lessonId: string): ShadowSentence[] {
+  const bank = FALLBACK_SENTENCES[lessonId] || FALLBACK_SENTENCES['a1-greetings'];
+  return bank.map((s, i) => ({ id: `s-${i}`, text: s.text, tip: s.tip, status: 'pending' as const }));
+}
+
+async function generateShadowSentences(lesson: Lesson, googleKey: string): Promise<ShadowSentence[]> {
+  // If no API key, use built-in sentences immediately
+  if (!googleKey) return getSentencesForLesson(lesson.id);
+
+  try {
+    const raw = await callGemini(lesson.systemPrompt, lesson.starterPrompt, googleKey);
+    // Extract JSON array from response (handle markdown fences, leading text, etc.)
+    const jsonMatch = raw.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) throw new Error('No JSON array found in response');
+    const parsed: { text: string; tip?: string }[] = JSON.parse(jsonMatch[0]);
+    if (!Array.isArray(parsed) || parsed.length === 0) throw new Error('Empty array');
+    return parsed.map((s, i) => ({
+      id: `s-${i}`,
+      text: s.text?.trim() || '',
+      tip: s.tip?.trim(),
+      status: 'pending' as const,
+    })).filter(s => s.text.length > 0);
+  } catch (e: any) {
+    console.warn('Gemini lesson generation failed, using built-in sentences:', e?.message);
+    // Silently fall back to built-in sentences — lesson still works perfectly
+    return getSentencesForLesson(lesson.id);
+  }
+}
   const synth = window.speechSynthesis;
   synth.cancel();
   const utt = new SpeechSynthesisUtterance(text);
@@ -251,31 +452,36 @@ function speakText(text: string, onEnd?: () => void) {
   synth.speak(utt);
 }
 
-async function generateShadowSentences(lesson: Lesson, googleKey: string): Promise<ShadowSentence[]> {
-  const raw = await callGemini(
-    lesson.systemPrompt,
-    lesson.starterPrompt,
-    googleKey,
-  );
-  const clean = raw.replace(/```json|```/g, '').trim();
-  const parsed: { text: string; tip?: string }[] = JSON.parse(clean);
-  return parsed.map((s, i) => ({
-    id: `s-${i}`,
-    text: s.text,
-    tip: s.tip,
-    status: 'pending' as const,
-  }));
+async function evaluateSpeech(original: string, transcript: string, googleKey: string): Promise<{ score: number; feedback: string }> {
+  // Simple local scoring when no API key
+  if (!googleKey) {
+    const score = localScore(original, transcript);
+    return { score, feedback: score >= 80 ? 'Great job! Keep it up!' : score >= 60 ? 'Good effort — practice makes perfect!' : 'Keep trying! Listen carefully and try again.' };
+  }
+  try {
+    const raw = await callGemini(
+      'You are a precise English pronunciation evaluator. Compare the target sentence with what the user said. Return ONLY valid JSON (no markdown) with exactly: {"score": NUMBER, "feedback": "STRING"}. Score 0-100: 100=perfect, 80+=great, 60+=good, below 60=needs practice. Be brief and encouraging in feedback.',
+      `Target: "${original}"\nUser said: "${transcript}"`,
+      googleKey,
+    );
+    const jsonMatch = raw.match(/\{[\s\S]*?\}/);
+    if (!jsonMatch) throw new Error('no JSON');
+    const parsed = JSON.parse(jsonMatch[0]);
+    return { score: Math.round(Number(parsed.score) || 75), feedback: String(parsed.feedback || 'Good effort!') };
+  } catch {
+    const score = localScore(original, transcript);
+    return { score, feedback: score >= 80 ? 'Excellent pronunciation!' : 'Good effort! Keep practicing.' };
+  }
 }
 
-async function evaluateSpeech(original: string, transcript: string, googleKey: string): Promise<{ score: number; feedback: string }> {
-  const raw = await callGemini(
-    'You are a precise English pronunciation evaluator. Compare the target sentence with what the user said. Return ONLY valid JSON with: {"score": 0-100, "feedback": "one short encouraging sentence"}. Score 100 = perfect, 80+ = great, 60+ = good, below 60 = needs practice. Be encouraging.',
-    `Target: "${original}"\nUser said: "${transcript}"`,
-    googleKey,
-  ).catch(() => '');
-  if (!raw) return { score: 75, feedback: 'Good effort! Keep practicing.' };
-  const clean = raw.replace(/```json|```/g, '').trim();
-  try { return JSON.parse(clean); } catch { return { score: 75, feedback: 'Good effort!' }; }
+/** Simple word-overlap score used when Gemini is unavailable */
+function localScore(original: string, transcript: string): number {
+  if (!transcript || transcript === original) return transcript === original ? 95 : 40;
+  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(Boolean);
+  const target = norm(original);
+  const said   = norm(transcript);
+  const hits   = target.filter(w => said.includes(w)).length;
+  return Math.round((hits / Math.max(target.length, 1)) * 100);
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -342,16 +548,10 @@ export function RolePlay() {
     setSentences([]);
     setCurrentIdx(0);
     setLessonDone(false);
-
-    try {
-      const s = await generateShadowSentences(lesson, googleKey);
-      setSentences(s);
-    } catch (e) {
-      setError('Failed to load lesson. Please try again.');
-      setSentences([]);
-    } finally {
-      setLoading(false);
-    }
+    // generateShadowSentences never throws — falls back to built-in sentences
+    const s = await generateShadowSentences(lesson, googleKey);
+    setSentences(s);
+    setLoading(false);
   };
 
   // ── Playback ────────────────────────────────────────────────────────────────
@@ -824,11 +1024,11 @@ export function RolePlay() {
       </div>
 
       {!hasApiKey && (
-        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-          <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-amber-800 space-y-0.5">
-            <p><strong>Setup required.</strong> An administrator must configure the AI services in the Admin Panel.</p>
-            <p className="text-xs text-amber-700">Needed: Google Gemini · Groq · ElevenLabs</p>
+        <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+          <AlertCircle className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-blue-800 space-y-0.5">
+            <p><strong>Built-in lessons active.</strong> You can practice with pre-loaded sentences now.</p>
+            <p className="text-xs text-blue-600">For AI-generated lessons &amp; voice scoring, an admin must add API keys (Google · Groq · ElevenLabs).</p>
           </div>
         </div>
       )}
@@ -885,11 +1085,11 @@ export function RolePlay() {
           return (
             <motion.button key={lesson.id}
               whileTap={{ scale: 0.98 }}
-              onClick={() => hasApiKey ? loadLesson(lesson) : undefined}
-              disabled={!hasApiKey}
-              className={`w-full text-left rounded-2xl border transition-all ${
-                done ? 'border-emerald-200 bg-emerald-50/50' : 'border-border bg-card hover:border-[#F5A623]/40 hover:bg-[#FFF3DD]/30'
-              } ${!hasApiKey ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+              onClick={() => loadLesson(lesson)}
+              disabled={false}
+              className={`w-full text-left rounded-2xl border transition-all
+                ${done ? 'border-emerald-200 bg-emerald-50/50' : 'border-border bg-card hover:border-[#F5A623]/40 hover:bg-[#FFF3DD]/30'}
+                cursor-pointer`}>
               <div className="flex items-center gap-4 px-4 py-3.5">
                 <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${lesson.color}`}>
                   <lesson.icon className="h-5 w-5" />
