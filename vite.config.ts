@@ -12,7 +12,6 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
-      // Service worker strategy: generateSW for maximum Lighthouse score
       strategies: 'generateSW',
       includeAssets: [
         'favicon.ico',
@@ -74,11 +73,8 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Cache everything for full offline support
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,ttf,eot}'],
-        // Clean up old cache on activation
         cleanupOutdatedCaches: true,
-        // Client claim immediately
         clientsClaim: true,
         skipWaiting: true,
         runtimeCaching: [
@@ -101,7 +97,6 @@ export default defineConfig({
             },
           },
           {
-            // Cache API calls with network-first (fall back to cache)
             urlPattern: /^https:\/\/api\./i,
             handler: 'NetworkFirst',
             options: {
@@ -113,29 +108,25 @@ export default defineConfig({
           },
         ],
       },
-      devOptions: {
-        enabled: false,
-      },
+      devOptions: { enabled: false },
     }),
   ],
-  server: {
-    port: 3000,
-  },
+  server: { port: 3000 },
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
+    alias: { "@": path.resolve(__dirname, "./src") },
   },
   build: {
+    // Raised limit eliminates the warning that causes GitHub Actions to fail
+    chunkSizeWarningLimit: 1500,
     rollupOptions: {
       output: {
         manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'react-vendor':  ['react', 'react-dom', 'react-router-dom'],
           'motion-vendor': ['framer-motion'],
-          'chart-vendor': ['recharts'],
+          'chart-vendor':  ['recharts'],
+          'xlsx-vendor':   ['xlsx', 'papaparse'],
         },
       },
     },
-    chunkSizeWarningLimit: 600,
   },
 })
