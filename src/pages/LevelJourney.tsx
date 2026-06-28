@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/App';
+import { useAuth } from '@/hooks/useAuth';
 import type { CEFRLevel } from '@/types/vocabulary';
 
 const CEFR: { level: CEFRLevel; label: string; desc: string; badge: string }[] = [
@@ -37,7 +38,14 @@ const UNLOCK_PCT = 80;
 
 export function LevelJourney() {
   const { vocabulary } = useApp();
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
+
+  // Pretest level: if user passed pretest, unlock up to and including that level
+  const pretestLevel = currentUser?.pretestLevel as string | undefined;
+  const LEVEL_ORDER = ['A1','A2','B1','B2','C1','C2'];
+  const pretestIdx  = pretestLevel ? LEVEL_ORDER.indexOf(pretestLevel) : -1;
+  // Use pretest level as initial expanded panel (set in useMemo above)
   const [expanded, setExpanded] = useState<CEFRLevel | null>(null);
 
   // Per-level stats
@@ -48,16 +56,34 @@ export function LevelJourney() {
     return { level, total, learned, mastery };
   }), [vocabulary.words]);
 
-  // Which levels are unlocked (A1 always; each subsequent needs prev ≥80%)
+  // Which levels are unlocked:
+  //   1. A1 always unlocked
+  //   2. If user passed pretest at level X, unlock A1 through X
+  //   3. If previous level has ≥80% mastery (or no words), unlock next
   const unlocked = useMemo(() => {
     const s = new Set<CEFRLevel>();
     for (let i = 0; i < CEFR.length; i++) {
-      if (i === 0) { s.add(CEFR[i].level); continue; }
+      const level = CEFR[i].level as CEFRLevel;
+      if (i === 0) { s.add(level); continue; }
+      // Unlock by pretest result
+      if (pretestIdx >= i) { s.add(level); continue; }
+      // Unlock by mastery
       const prev = stats[i - 1];
-      if (prev.mastery >= UNLOCK_PCT || prev.total === 0) s.add(CEFR[i].level);
+      if (prev.mastery >= UNLOCK_PCT || prev.total === 0) s.add(level);
     }
     return s;
-  }, [stats]);
+  }, [stats, pretestIdx]);
+
+  // Auto-expand to the pretest level on first load
+  const defaultExpanded = pretestLevel && CEFR.find(c => c.level === pretestLevel) ? pretestLevel as CEFRLevel : null;
+
+
+  // Auto-scroll to and expand pretest level on mount
+  useEffect(() => {
+    if (pretestLevel && LEVEL_ORDER.includes(pretestLevel)) {
+      setExpanded(pretestLevel as CEFRLevel);
+    }
+  }, [pretestLevel]);
 
   const startStudy = (level: CEFRLevel, modePath: string) => {
     sessionStorage.setItem('moe_study_filter', 'level');
@@ -84,6 +110,19 @@ export function LevelJourney() {
       </div>
 
       {/* Overall banner */}
+      {/* Pretest result banner */}
+      {pretestLevel && currentUser?.pretestDone && (
+        <div className="rounded-xl bg-[#F5A623]/10 border border-[#F5A623]/30 px-4 py-3 flex items-center gap-3">
+          <div className="h-9 w-9 rounded-lg bg-[#F5A623] flex items-center justify-center flex-shrink-0">
+            <span className="text-white text-sm font-bold">{pretestLevel}</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-foreground">Pre-test placed you at {pretestLevel}</p>
+            <p className="text-xs text-muted-foreground">All levels up to {pretestLevel} are unlocked · Start from your level or review below</p>
+          </div>
+        </div>
+      )}
+
       <div className="rounded-2xl bg-[#1A1A2E] text-white px-5 py-4 space-y-3">
         <div className="flex items-center justify-between">
           <div>

@@ -61,14 +61,14 @@ export function Settings() {
         <p className="mt-1 text-sm text-muted-foreground">Configure your learning preferences</p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[200px_1fr]">
-        {/* Sidebar nav */}
-        <div className="space-y-1">
+      <div className="flex flex-col gap-6">
+        {/* Section nav — horizontal on mobile, vertical on lg */}
+        <div className="flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:space-y-1 lg:overflow-visible">
           {sections.map((section) => (
             <button
               key={section.id}
               onClick={() => setActiveSection(section.id)}
-              className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
+              className={`flex flex-shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors whitespace-nowrap lg:w-full lg:gap-3 lg:py-3 ${
                 activeSection === section.id
                   ? 'bg-card border border-border text-foreground shadow-sm'
                   : 'text-muted-foreground hover:bg-card/60'
